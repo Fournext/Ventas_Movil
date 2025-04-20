@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
-
+import 'ProductListScreen.dart'; 
 import '../../Core/Animation/Fade_Animation.dart';
 import '../../Core/Colors/Hex_Color.dart';
-// import '../Forgot Password/Forgot_Password_Screen.dart';
-// import '../Sign Up Screen/SignUp_Screen.dart';
+import '../../Core/services/auth_service.dart';
+
+
 
 enum FormData {
-  Email,
+  username,
   password,
 }
 
@@ -98,7 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             height: 40,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(12.0),
-                              color: selected == FormData.Email
+                              color: selected == FormData.username
                                   ? enabled
                                   : backgroundColor,
                             ),
@@ -107,7 +108,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               controller: emailController,
                               onTap: () {
                                 setState(() {
-                                  selected = FormData.Email;
+                                  selected = FormData.username;
                                 });
                               },
                               decoration: InputDecoration(
@@ -115,21 +116,21 @@ class _LoginScreenState extends State<LoginScreen> {
                                 border: InputBorder.none,
                                 prefixIcon: Icon(
                                   Icons.email_outlined,
-                                  color: selected == FormData.Email
+                                  color: selected == FormData.username
                                       ? enabledtxt
                                       : deaible,
                                   size: 20,
                                 ),
-                                hintText: 'Email',
+                                hintText: 'Username',
                                 hintStyle: TextStyle(
-                                    color: selected == FormData.Email
+                                    color: selected == FormData.username
                                         ? enabledtxt
                                         : deaible,
                                     fontSize: 12),
                               ),
                               textAlignVertical: TextAlignVertical.center,
                               style: TextStyle(
-                                  color: selected == FormData.Email
+                                  color: selected == FormData.username
                                       ? enabledtxt
                                       : deaible,
                                   fontWeight: FontWeight.bold,
@@ -210,30 +211,54 @@ class _LoginScreenState extends State<LoginScreen> {
                         FadeAnimation(
                           delay: 1,
                           child: TextButton(
-                              onPressed: () {
-                                // Navigator.pop(context);
-                                // Navigator.of(context)
-                                //     .push(MaterialPageRoute(builder: (context) {
-                                //   return MyApp(isLogin: true);
-                                // }));
-                              },
-                              child: Text(
-                                "Login",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  letterSpacing: 0.5,
-                                  fontSize: 16.0,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                            onPressed: () async {
+                              final auth = AuthService();
+                              final username = emailController.text;
+                              final password = passwordController.text;
+
+                              bool isValid = await auth.login(username, password);
+
+                              if (isValid) {
+                                final tipo = await auth.getTipoUsuario(username);
+
+                                if (tipo?.toLowerCase() == 'cliente') {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => ProductListScreen()),
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text("Cliente no encontrado")),
+                                  );
+                                  await auth.logout(); // opcional: limpia el token si no es cliente
+                                }
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text("Email o contraseña incorrectos")),
+                                );
+                              }
+                            },
+
+                            child: Text(
+                              "Login",
+                              style: TextStyle(
+                                color: Colors.white,
+                                letterSpacing: 0.5,
+                                fontSize: 16.0,
+                                fontWeight: FontWeight.bold,
                               ),
-                              style: TextButton.styleFrom(
-                                  backgroundColor: Color(0xFF2697FF),
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 14.0, horizontal: 80),
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(12.0)))),
+                            ),
+                            style: TextButton.styleFrom(
+                              backgroundColor: Color(0xFF2697FF),
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 14.0, horizontal: 80),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12.0),
+                              ),
+                            ),
+                          ),
                         ),
+
                       ],
                     ),
                   ),
